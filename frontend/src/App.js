@@ -79,6 +79,10 @@ body{font-family:var(--sans);background:var(--off);color:var(--ink);line-height:
 .lcard-meta{display:flex;flex-direction:column;gap:.2rem}
 .lcard-meta-row{font-size:.74rem;color:var(--muted);display:flex;align-items:center;gap:.35rem}
 .feat-dot{position:absolute;top:.95rem;right:.95rem;width:7px;height:7px;border-radius:50%;background:var(--yellow);border:1.5px solid var(--yellow-dark)}
+.chamber-badge{display:inline-flex;align-items:center;gap:.25rem;background:#1a472a;color:#fff;font-size:.58rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;padding:.15rem .45rem;border-radius:2px;margin-top:.25rem}
+.lcard-social{display:flex;gap:.5rem;margin-top:.25rem}
+.social-icon{font-size:.85rem;opacity:.55;transition:opacity .15s}
+.social-icon:hover{opacity:1}
 
 .dpage{max-width:760px;margin:0 auto;padding:2rem 1.5rem 5rem}
 .back-btn{display:inline-flex;align-items:center;gap:.4rem;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);background:none;border:none;padding:0;cursor:pointer;margin-bottom:2rem}
@@ -96,6 +100,9 @@ body{font-family:var(--sans);background:var(--off);color:var(--ink);line-height:
 .info-lbl{font-size:.62rem;text-transform:uppercase;letter-spacing:.14em;font-weight:700;color:var(--muted);margin-bottom:.35rem}
 .info-val{font-size:.88rem;font-weight:500;color:var(--ink);line-height:1.45}
 .info-a{color:var(--black);text-decoration:none;border-bottom:1.5px solid var(--yellow)}
+.d-social{display:flex;gap:.75rem;align-items:center;margin-top:1.25rem;flex-wrap:wrap}
+.d-social-link{display:inline-flex;align-items:center;gap:.35rem;font-size:.75rem;font-weight:600;color:var(--ink);text-decoration:none;border:1.5px solid var(--rule);border-radius:3px;padding:.3rem .7rem;transition:border-color .15s,color .15s}
+.d-social-link:hover{border-color:var(--yellow);color:var(--yellow-dark)}
 
 .cpage{max-width:1120px;margin:0 auto;padding:2rem 1.5rem 5rem}
 .cpage-hero{background:var(--black);border-radius:6px;padding:1.75rem;margin-bottom:2rem;display:flex;align-items:center;gap:1.1rem}
@@ -140,6 +147,46 @@ function SearchForm({ value, onChange, onSubmit, inputRef, dark }) {
   );
 }
 
+function ChamberBadge() {
+  return (
+    <span className="chamber-badge">✓ Chamber Member</span>
+  );
+}
+
+function SocialLinks({ listing, detail = false }) {
+  const links = [
+    { key: "facebook", label: "Facebook", icon: "f" },
+    { key: "instagram", label: "Instagram", icon: "ig" },
+    { key: "twitter", label: "X", icon: "x" },
+    { key: "tiktok", label: "TikTok", icon: "tt" },
+    { key: "youtube", label: "YouTube", icon: "yt" },
+  ].filter((s) => listing[s.key]);
+
+  if (links.length === 0) return null;
+
+  if (detail) {
+    return (
+      <div className="d-social">
+        {links.map((s) => (
+          <a key={s.key} href={listing[s.key]} target="_blank" rel="noopener noreferrer" className="d-social-link">
+            {s.label} →
+          </a>
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <div className="lcard-social">
+      {links.map((s) => (
+        <a key={s.key} href={listing[s.key]} target="_blank" rel="noopener noreferrer" className="social-icon" onClick={(e) => e.stopPropagation()}>
+          {s.icon}
+        </a>
+      ))}
+    </div>
+  );
+}
+
 function ListingCard({ listing, catName, onClick }) {
   return (
     <div className="lcard fu" onClick={() => onClick(listing.id)}>
@@ -149,6 +196,7 @@ function ListingCard({ listing, catName, onClick }) {
         <div>
           <div className="lcard-name">{listing.name}</div>
           <div className="lcard-cat">{catName}</div>
+          {listing.chamber_member === 1 && <ChamberBadge />}
         </div>
       </div>
       <p className="lcard-desc">{listing.description}</p>
@@ -156,6 +204,7 @@ function ListingCard({ listing, catName, onClick }) {
         <span className="lcard-meta-row">📍 {listing.address ? listing.address.split(",")[0] : ""}</span>
         {listing.phone && <span className="lcard-meta-row">📞 {listing.phone}</span>}
       </div>
+      <SocialLinks listing={listing} />
     </div>
   );
 }
@@ -230,6 +279,7 @@ function DetailPage({ listingId, categories, onBack, onCategory }) {
           <span className="d-cat-chip" onClick={() => onCategory(listing.category_id)}>{cat?.icon} {cat?.name}</span>
           <span className="d-city-chip">Sanford, NC</span>
           {listing.featured === 1 && <span style={{fontSize:".6rem",fontWeight:700,textTransform:"uppercase",letterSpacing:".1em",color:"#111",background:"#F5C800",padding:".14rem .42rem",borderRadius:2}}>★ Featured</span>}
+          {listing.chamber_member === 1 && <ChamberBadge />}
         </div>
       </div>
       <p className="d-desc">{listing.description}</p>
@@ -239,6 +289,7 @@ function DetailPage({ listingId, categories, onBack, onCategory }) {
         <div className="info-cell"><div className="info-lbl">Website</div><div className="info-val">{listing.website ? <a href={listing.website} target="_blank" rel="noopener noreferrer" className="info-a">Visit website →</a> : "Not listed"}</div></div>
         <div className="info-cell"><div className="info-lbl">Category</div><div className="info-val" style={{cursor:"pointer"}} onClick={() => onCategory(listing.category_id)}>{cat?.icon} {cat?.name}</div></div>
       </div>
+      <SocialLinks listing={listing} detail={true} />
     </div>
   );
 }
