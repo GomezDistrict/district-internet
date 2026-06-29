@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 
 const API = "http://localhost:5000/api";
+const ADMIN_PASSWORD = "district2024";
 
 const css = `
 @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Source+Serif+4:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap');
@@ -126,6 +127,56 @@ body{font-family:var(--sans);background:var(--off);color:var(--ink);line-height:
 .footer-tag{font-size:.77rem;color:rgba(255,255,255,.35);margin-bottom:.5rem}
 .footer-copy{font-size:.65rem;color:rgba(255,255,255,.18);text-transform:uppercase;letter-spacing:.1em}
 
+/* Admin Styles */
+.admin-wrap{min-height:100vh;background:#F0EEE9}
+.admin-nav{background:var(--black);height:58px;display:flex;align-items:center;padding:0 1.5rem;gap:1rem;border-bottom:3px solid var(--yellow)}
+.admin-nav-title{font-family:var(--display);font-size:1.1rem;letter-spacing:.08em;color:var(--white)}
+.admin-nav-sub{font-size:.7rem;color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:.1em}
+.admin-nav-spacer{flex:1}
+.admin-exit{background:none;border:1px solid rgba(255,255,255,.2);border-radius:3px;color:rgba(255,255,255,.6);font-size:.72rem;padding:.3rem .8rem;cursor:pointer}
+.admin-body{max-width:1100px;margin:0 auto;padding:2rem 1.5rem}
+.admin-topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem}
+.admin-title{font-family:var(--display);font-size:1.5rem;letter-spacing:.06em}
+.admin-add-btn{background:var(--yellow);border:none;border-radius:3px;padding:.55rem 1.2rem;font-family:var(--sans);font-size:.8rem;font-weight:700;cursor:pointer;text-transform:uppercase}
+.admin-table{width:100%;border-collapse:collapse;background:var(--white);border-radius:5px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.admin-table th{background:var(--black);color:var(--yellow);font-family:var(--display);font-size:.8rem;letter-spacing:.08em;padding:.75rem 1rem;text-align:left}
+.admin-table td{padding:.75rem 1rem;border-bottom:1px solid var(--rule);font-size:.82rem;vertical-align:middle}
+.admin-table tr:last-child td{border-bottom:none}
+.admin-table tr:hover td{background:#FFFDF5}
+.admin-badge{font-size:.6rem;font-weight:700;text-transform:uppercase;padding:.15rem .4rem;border-radius:2px}
+.admin-badge-chamber{background:#1a472a;color:#fff}
+.admin-badge-featured{background:var(--yellow);color:var(--black)}
+.admin-edit-btn{background:var(--black);color:var(--yellow);border:none;border-radius:2px;padding:.3rem .7rem;font-size:.72rem;font-weight:700;cursor:pointer;margin-right:.4rem}
+.admin-del-btn{background:#c0392b;color:#fff;border:none;border-radius:2px;padding:.3rem .7rem;font-size:.72rem;font-weight:700;cursor:pointer}
+
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:500;display:flex;align-items:flex-start;justify-content:center;padding:2rem 1rem;overflow-y:auto}
+.modal{background:var(--white);border-radius:6px;width:100%;max-width:620px;padding:2rem;position:relative}
+.modal-title{font-family:var(--display);font-size:1.4rem;letter-spacing:.06em;margin-bottom:1.5rem;border-bottom:2px solid var(--yellow);padding-bottom:.75rem}
+.modal-close{position:absolute;top:1rem;right:1rem;background:none;border:none;font-size:1.2rem;cursor:pointer;color:var(--muted)}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+@media(max-width:500px){.form-grid{grid-template-columns:1fr}}
+.form-group{display:flex;flex-direction:column;gap:.35rem}
+.form-group.full{grid-column:1/-1}
+.form-label{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted)}
+.form-input{padding:.6rem .8rem;border:1.5px solid var(--rule);border-radius:3px;font-family:var(--sans);font-size:.85rem;color:var(--ink);outline:none;transition:border-color .15s}
+.form-input:focus{border-color:var(--yellow)}
+.form-select{padding:.6rem .8rem;border:1.5px solid var(--rule);border-radius:3px;font-family:var(--sans);font-size:.85rem;color:var(--ink);outline:none;background:var(--white)}
+.form-checks{display:flex;gap:1.5rem;margin-top:.25rem}
+.form-check{display:flex;align-items:center;gap:.4rem;font-size:.82rem;cursor:pointer}
+.form-actions{display:flex;gap:.75rem;justify-content:flex-end;margin-top:1.5rem;padding-top:1rem;border-top:1px solid var(--rule)}
+.btn-save{background:var(--yellow);border:none;border-radius:3px;padding:.6rem 1.4rem;font-family:var(--sans);font-size:.82rem;font-weight:700;cursor:pointer}
+.btn-cancel{background:none;border:1.5px solid var(--rule);border-radius:3px;padding:.6rem 1.2rem;font-family:var(--sans);font-size:.82rem;cursor:pointer}
+
+.admin-login{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--black)}
+.admin-login-box{background:var(--white);border-radius:6px;padding:2.5rem;width:100%;max-width:360px;text-align:center}
+.admin-login-logo{width:52px;height:52px;border-radius:50%;background:var(--yellow);display:flex;align-items:center;justify-content:center;font-family:var(--display);font-size:18px;color:var(--black);margin:0 auto 1.25rem}
+.admin-login-title{font-family:var(--display);font-size:1.5rem;letter-spacing:.06em;margin-bottom:.25rem}
+.admin-login-sub{font-size:.78rem;color:var(--muted);margin-bottom:1.75rem}
+.admin-login-input{width:100%;padding:.75rem 1rem;border:1.5px solid var(--rule);border-radius:3px;font-family:var(--sans);font-size:.9rem;outline:none;margin-bottom:.75rem;transition:border-color .15s}
+.admin-login-input:focus{border-color:var(--yellow)}
+.admin-login-btn{width:100%;background:var(--yellow);border:none;border-radius:3px;padding:.75rem;font-family:var(--sans);font-size:.85rem;font-weight:700;cursor:pointer;text-transform:uppercase}
+.admin-login-err{color:#c0392b;font-size:.78rem;margin-top:.5rem}
+
 @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 .fu{animation:fadeUp .33s ease both}
 @media(max-width:600px){.hero{padding:2.5rem 1.25rem 2rem}.nav-loc{display:none}}
@@ -148,41 +199,28 @@ function SearchForm({ value, onChange, onSubmit, inputRef, dark }) {
 }
 
 function ChamberBadge() {
-  return (
-    <span className="chamber-badge">✓ Chamber Member</span>
-  );
+  return <span className="chamber-badge">✓ Chamber Member</span>;
 }
 
 function SocialLinks({ listing, detail = false }) {
   const links = [
-    { key: "facebook", label: "Facebook", icon: "f" },
-    { key: "instagram", label: "Instagram", icon: "ig" },
-    { key: "twitter", label: "X", icon: "x" },
-    { key: "tiktok", label: "TikTok", icon: "tt" },
-    { key: "youtube", label: "YouTube", icon: "yt" },
+    { key: "facebook", label: "Facebook" },
+    { key: "instagram", label: "Instagram" },
+    { key: "twitter", label: "X" },
+    { key: "tiktok", label: "TikTok" },
+    { key: "youtube", label: "YouTube" },
   ].filter((s) => listing[s.key]);
-
   if (links.length === 0) return null;
-
   if (detail) {
     return (
       <div className="d-social">
-        {links.map((s) => (
-          <a key={s.key} href={listing[s.key]} target="_blank" rel="noopener noreferrer" className="d-social-link">
-            {s.label} →
-          </a>
-        ))}
+        {links.map((s) => <a key={s.key} href={listing[s.key]} target="_blank" rel="noopener noreferrer" className="d-social-link">{s.label} →</a>)}
       </div>
     );
   }
-
   return (
     <div className="lcard-social">
-      {links.map((s) => (
-        <a key={s.key} href={listing[s.key]} target="_blank" rel="noopener noreferrer" className="social-icon" onClick={(e) => e.stopPropagation()}>
-          {s.icon}
-        </a>
-      ))}
+      {links.map((s) => <a key={s.key} href={listing[s.key]} target="_blank" rel="noopener noreferrer" className="social-icon" onClick={(e) => e.stopPropagation()}>{s.label}</a>)}
     </div>
   );
 }
@@ -315,6 +353,200 @@ function SearchPage({ query, categories, onListing, onBack }) {
   );
 }
 
+// Admin Components
+function AdminLogin({ onLogin }) {
+  const [pw, setPw] = useState("");
+  const [err, setErr] = useState("");
+  async function handleLogin() {
+    try {
+      const res = await fetch(`${API}/admin/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: pw }),
+      });
+      if (res.ok) { onLogin(pw); }
+      else { setErr("Incorrect password. Try again."); }
+    } catch { setErr("Could not connect to server."); }
+  }
+  return (
+    <div className="admin-login">
+      <style>{css}</style>
+      <div className="admin-login-box">
+        <div className="admin-login-logo">DI</div>
+        <div className="admin-login-title">Admin Panel</div>
+        <div className="admin-login-sub">District Internet · Sanford, NC</div>
+        <input className="admin-login-input" type="password" placeholder="Enter admin password" value={pw} onChange={(e) => setPw(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleLogin()} />
+        <button className="admin-login-btn" onClick={handleLogin}>Sign In</button>
+        {err && <div className="admin-login-err">{err}</div>}
+      </div>
+    </div>
+  );
+}
+
+function ListingModal({ listing, categories, cities, onSave, onClose }) {
+  const blank = { city_id: 1, category_id: 1, name: "", description: "", address: "", phone: "", website: "", initials: "", featured: 0, chamber_member: 0, facebook: "", instagram: "", twitter: "", tiktok: "", youtube: "" };
+  const [form, setForm] = useState(listing || blank);
+  function set(k, v) { setForm((f) => ({ ...f, [k]: v })); }
+  function autoInitials(name) {
+    const words = name.trim().split(/\s+/);
+    if (words.length >= 2) return (words[0][0] + words[1][0]).toUpperCase();
+    return name.slice(0, 2).toUpperCase();
+  }
+  function handleName(v) { set("name", v); if (!form.initials || form.initials === autoInitials(form.name)) { set("initials", autoInitials(v)); } }
+  return (
+    <div className="modal-overlay">
+      <div className="modal">
+        <button className="modal-close" onClick={onClose}>✕</button>
+        <div className="modal-title">{listing ? "Edit Listing" : "Add New Listing"}</div>
+        <div className="form-grid">
+          <div className="form-group full">
+            <label className="form-label">Business Name *</label>
+            <input className="form-input" value={form.name} onChange={(e) => handleName(e.target.value)} placeholder="e.g. The Sanford Grille" />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Category *</label>
+            <select className="form-select" value={form.category_id} onChange={(e) => set("category_id", parseInt(e.target.value))}>
+              {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
+          </div>
+          <div className="form-group">
+            <label className="form-label">Initials (2 letters)</label>
+            <input className="form-input" value={form.initials} onChange={(e) => set("initials", e.target.value.toUpperCase().slice(0, 2))} placeholder="SG" />
+          </div>
+          <div className="form-group full">
+            <label className="form-label">Description *</label>
+            <input className="form-input" value={form.description} onChange={(e) => set("description", e.target.value)} placeholder="Short description of the business" />
+          </div>
+          <div className="form-group full">
+            <label className="form-label">Address</label>
+            <input className="form-input" value={form.address} onChange={(e) => set("address", e.target.value)} placeholder="215 Carthage St, Sanford, NC 27330" />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Phone</label>
+            <input className="form-input" value={form.phone} onChange={(e) => set("phone", e.target.value)} placeholder="(919) 774-0021" />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Website</label>
+            <input className="form-input" value={form.website} onChange={(e) => set("website", e.target.value)} placeholder="https://..." />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Facebook URL</label>
+            <input className="form-input" value={form.facebook} onChange={(e) => set("facebook", e.target.value)} placeholder="https://facebook.com/..." />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Instagram URL</label>
+            <input className="form-input" value={form.instagram} onChange={(e) => set("instagram", e.target.value)} placeholder="https://instagram.com/..." />
+          </div>
+          <div className="form-group">
+            <label className="form-label">X (Twitter) URL</label>
+            <input className="form-input" value={form.twitter} onChange={(e) => set("twitter", e.target.value)} placeholder="https://x.com/..." />
+          </div>
+          <div className="form-group">
+            <label className="form-label">TikTok URL</label>
+            <input className="form-input" value={form.tiktok} onChange={(e) => set("tiktok", e.target.value)} placeholder="https://tiktok.com/..." />
+          </div>
+          <div className="form-group">
+            <label className="form-label">YouTube URL</label>
+            <input className="form-input" value={form.youtube} onChange={(e) => set("youtube", e.target.value)} placeholder="https://youtube.com/..." />
+          </div>
+          <div className="form-group full">
+            <label className="form-label">Options</label>
+            <div className="form-checks">
+              <label className="form-check"><input type="checkbox" checked={form.featured === 1} onChange={(e) => set("featured", e.target.checked ? 1 : 0)} /> Featured listing</label>
+              <label className="form-check"><input type="checkbox" checked={form.chamber_member === 1} onChange={(e) => set("chamber_member", e.target.checked ? 1 : 0)} /> Chamber member</label>
+            </div>
+          </div>
+        </div>
+        <div className="form-actions">
+          <button className="btn-cancel" onClick={onClose}>Cancel</button>
+          <button className="btn-save" onClick={() => onSave(form)}>Save Listing</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AdminPanel({ password, onExit }) {
+  const [listings, setListings] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [cities, setCities] = useState([]);
+  const [modal, setModal] = useState(null);
+  const headers = { "Content-Type": "application/json", "x-admin-password": password };
+
+  useEffect(() => {
+    fetch(`${API}/listings`).then((r) => r.json()).then(setListings);
+    fetch(`${API}/categories`).then((r) => r.json()).then(setCategories);
+    fetch(`${API}/cities`).then((r) => r.json()).then(setCities);
+  }, []);
+
+  function catName(id) { const c = categories.find((c) => c.id === id); return c ? c.name : ""; }
+
+  async function saveListing(form) {
+    const isEdit = !!form.id;
+    const url = isEdit ? `${API}/admin/listings/${form.id}` : `${API}/admin/listings`;
+    const method = isEdit ? "PUT" : "POST";
+    await fetch(url, { method, headers, body: JSON.stringify(form) });
+    const updated = await fetch(`${API}/listings`).then((r) => r.json());
+    setListings(updated);
+    setModal(null);
+  }
+
+  async function deleteListing(id) {
+    if (!window.confirm("Delete this listing? This cannot be undone.")) return;
+    await fetch(`${API}/admin/listings/${id}`, { method: "DELETE", headers });
+    setListings((prev) => prev.filter((l) => l.id !== id));
+  }
+
+  return (
+    <div className="admin-wrap">
+      <style>{css}</style>
+      <div className="admin-nav">
+        <div>
+          <div className="admin-nav-title">District Internet Admin</div>
+          <div className="admin-nav-sub">Sanford, NC</div>
+        </div>
+        <div className="admin-nav-spacer" />
+        <button className="admin-exit" onClick={onExit}>← Exit to Site</button>
+      </div>
+      <div className="admin-body">
+        <div className="admin-topbar">
+          <div className="admin-title">All Listings ({listings.length})</div>
+          <button className="admin-add-btn" onClick={() => setModal({})}>+ Add Listing</button>
+        </div>
+        <table className="admin-table">
+          <thead>
+            <tr>
+              <th>Business</th>
+              <th>Category</th>
+              <th>Phone</th>
+              <th>Badges</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {listings.map((l) => (
+              <tr key={l.id}>
+                <td><strong>{l.name}</strong><br /><span style={{fontSize:".72rem",color:"#999"}}>{l.address}</span></td>
+                <td>{catName(l.category_id)}</td>
+                <td>{l.phone}</td>
+                <td>
+                  {l.featured === 1 && <span className="admin-badge admin-badge-featured" style={{marginRight:4}}>Featured</span>}
+                  {l.chamber_member === 1 && <span className="admin-badge admin-badge-chamber">Chamber</span>}
+                </td>
+                <td>
+                  <button className="admin-edit-btn" onClick={() => setModal(l)}>Edit</button>
+                  <button className="admin-del-btn" onClick={() => deleteListing(l.id)}>Delete</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {modal !== null && <ListingModal listing={modal.id ? modal : null} categories={categories} cities={cities} onSave={saveListing} onClose={() => setModal(null)} />}
+    </div>
+  );
+}
+
 export default function App() {
   const [page, setPage] = useState("home");
   const [activeCat, setActiveCat] = useState(null);
@@ -324,7 +556,11 @@ export default function App() {
   const [categories, setCategories] = useState([]);
   const [listings, setListings] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [adminPw, setAdminPw] = useState(null);
   const inputRef = useRef(null);
+
+  // Check for admin route
+  const isAdmin = window.location.hash === "#admin";
 
   useEffect(() => {
     Promise.all([
@@ -336,6 +572,11 @@ export default function App() {
       setLoading(false);
     }).catch(() => setLoading(false));
   }, []);
+
+  if (isAdmin) {
+    if (!adminPw) return <AdminLogin onLogin={setAdminPw} />;
+    return <AdminPanel password={adminPw} onExit={() => { window.location.hash = ""; setAdminPw(null); }} />;
+  }
 
   function goHome() { setPage("home"); setActiveCat(null); setActive(null); setInputVal(""); setSearchQ(""); }
   function goCategory(id) { setActiveCat(id); setPage("category"); }

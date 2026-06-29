@@ -7,6 +7,9 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Admin password - simple protection for local/early use
+const ADMIN_PASSWORD = 'district2024';
+
 // Database connection
 const db = mysql.createConnection({
   host: process.env.DB_HOST,
@@ -23,7 +26,16 @@ db.connect((err) => {
   console.log('Connected to MySQL database');
 });
 
-// Routes
+// Admin auth middleware
+function adminAuth(req, res, next) {
+  const password = req.headers['x-admin-password'];
+  if (password !== ADMIN_PASSWORD) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  next();
+}
+
+// Public Routes
 app.get('/api/cities', (req, res) => {
   db.query('SELECT * FROM cities', (err, results) => {
     if (err) return res.status(500).json({ error: err.message });
@@ -69,6 +81,50 @@ app.get('/api/search', (req, res) => {
       res.json(results);
     }
   );
+});
+
+// Admin auth check
+app.post('/api/admin/login', (req, res) => {
+  const { password } = req.body;
+  if (password === ADMIN_PASSWORD) {
+    res.json({ success: true });
+  } else {
+    res.status(401).json({ error: 'Invalid password' });
+  }
+});
+
+// Admin - Create listing
+app.post('/api/admin/listings', adminAuth, (req, res) => {
+  const { city_id, category_id, name, description, address, phone, website, initials, featured, chamber_member, facebook, instagram, twitter, tiktok, youtube } = req.body;
+  db.query(
+    'INSERT INTO listings (city_id, category_id, name, description, address, phone, website, initials, featured, chamber_member, facebook, instagram, twitter, tiktok, youtube) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
+    [city_id, category_id, name, description, address, phone, website, initials, featured || 0, chamber_member || 0, facebook, instagram, twitter, tiktok, youtube],
+    (err, results) => {
+      if (err) return res.status(500).json({ error: err.message });
+      res.json({ id: results.insertId, message: 'Listing created' });
+    }
+  );
+});
+
+// Admin - Update listing
+app.put('/api/admin/listings/:id', adminAuth, (req, res) => {
+  const { city_id, category_id, name, description, address, phone, website, initials, featured, chamber_member, facebook, instagram, twitter, tiktok, youtube } = req.body;
+  db.query(
+    'UPDATE listings SET city_id=?, category_id=?, name=?, description=?, address=?, phone=?, website=?, initials=?, featured=?, chamber_member=?, facebook=?, instagram=?, twitter=?, tiktok=?, youtube=? WHERE id=?',
+    [city_id, category_id, name, description, address, phone, website, initials, featured || 0, chamber_member || 0, facebook, instagram, twitter, tiktok, youtube, req.params.id],
+    (err) => {
+      if (err) return res.status(500).json({ error: err.message });
+      res.json({ message: 'Listing updated' });
+    }
+  );
+});
+
+// Admin - Delete listing
+app.delete('/api/admin/listings/:id', adminAuth, (req, res) => {
+  db.query('DELETE FROM listings WHERE id = ?', [req.params.id], (err) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json({ message: 'Listing deleted' });
+  });
 });
 
 const PORT = process.env.PORT || 5000;
