@@ -387,6 +387,12 @@ function ListingModal({ listing, categories, cities, onSave, onClose }) {
   const blank = { city_id: 1, category_id: 1, name: "", description: "", address: "", phone: "", website: "", initials: "", featured: 0, chamber_member: 0, facebook: "", instagram: "", twitter: "", tiktok: "", youtube: "" };
   const [form, setForm] = useState(listing || blank);
   function set(k, v) { setForm((f) => ({ ...f, [k]: v })); }
+function formatPhone(v) {
+  const digits = v.replace(/\D/g, "").slice(0, 10);
+  if (digits.length <= 3) return digits;
+  if (digits.length <= 6) return `(${digits.slice(0,3)}) ${digits.slice(3)}`;
+  return `(${digits.slice(0,3)}) ${digits.slice(3,6)}-${digits.slice(6)}`;
+}
   function autoInitials(name) {
     const words = name.trim().split(/\s+/);
     if (words.length >= 2) return (words[0][0] + words[1][0]).toUpperCase();
@@ -423,7 +429,7 @@ function ListingModal({ listing, categories, cities, onSave, onClose }) {
           </div>
           <div className="form-group">
             <label className="form-label">Phone</label>
-            <input className="form-input" value={form.phone} onChange={(e) => set("phone", e.target.value)} placeholder="(919) 774-0021" />
+            <input className="form-input" value={form.phone} onChange={(e) => set("phone", formatPhone(e.target.value))} placeholder="(919) 774-0021" />
           </div>
           <div className="form-group">
             <label className="form-label">Website</label>
