@@ -177,6 +177,19 @@ body{font-family:var(--sans);background:var(--off);color:var(--ink);line-height:
 .admin-login-btn{width:100%;background:var(--yellow);border:none;border-radius:3px;padding:.75rem;font-family:var(--sans);font-size:.85rem;font-weight:700;cursor:pointer;text-transform:uppercase}
 .admin-login-err{color:#c0392b;font-size:.78rem;margin-top:.5rem}
 
+/* Owner Portal Styles */
+.owner-wrap{min-height:100vh;background:#F0EEE9}
+.owner-nav{background:var(--black);height:58px;display:flex;align-items:center;padding:0 1.5rem;gap:1rem;border-bottom:3px solid var(--yellow)}
+.owner-nav-title{font-family:var(--display);font-size:1.1rem;letter-spacing:.08em;color:var(--white)}
+.owner-nav-sub{font-size:.7rem;color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:.1em}
+.owner-body{max-width:760px;margin:0 auto;padding:2rem 1.5rem 5rem}
+.owner-greeting{font-family:var(--display);font-size:1.5rem;letter-spacing:.06em;margin-bottom:.25rem}
+.owner-sub{font-size:.8rem;color:var(--muted);margin-bottom:2rem}
+.owner-section{background:var(--white);border-radius:5px;padding:1.5rem;margin-bottom:1.5rem;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.owner-section-title{font-family:var(--display);font-size:1rem;letter-spacing:.08em;margin-bottom:1.25rem;padding-bottom:.75rem;border-bottom:2px solid var(--yellow)}
+.owner-success{background:#e8f5e9;border:1px solid #a5d6a7;border-radius:3px;padding:.75rem 1rem;font-size:.82rem;color:#2e7d32;margin-bottom:1rem}
+.owner-logout{background:none;border:1px solid rgba(255,255,255,.2);border-radius:3px;color:rgba(255,255,255,.6);font-size:.72rem;padding:.3rem .8rem;cursor:pointer;margin-left:auto}
+
 @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 .fu{animation:fadeUp .33s ease both}
 @media(max-width:600px){.hero{padding:2.5rem 1.25rem 2rem}.nav-loc{display:none}}
@@ -387,12 +400,12 @@ function ListingModal({ listing, categories, cities, onSave, onClose }) {
   const blank = { city_id: 1, category_id: 1, name: "", description: "", address: "", phone: "", website: "", initials: "", featured: 0, chamber_member: 0, facebook: "", instagram: "", twitter: "", tiktok: "", youtube: "" };
   const [form, setForm] = useState(listing || blank);
   function set(k, v) { setForm((f) => ({ ...f, [k]: v })); }
-function formatPhone(v) {
-  const digits = v.replace(/\D/g, "").slice(0, 10);
-  if (digits.length <= 3) return digits;
-  if (digits.length <= 6) return `(${digits.slice(0,3)}) ${digits.slice(3)}`;
-  return `(${digits.slice(0,3)}) ${digits.slice(3,6)}-${digits.slice(6)}`;
-}
+  function formatPhone(v) {
+    const digits = v.replace(/\D/g, "").slice(0, 10);
+    if (digits.length <= 3) return digits;
+    if (digits.length <= 6) return `(${digits.slice(0,3)}) ${digits.slice(3)}`;
+    return `(${digits.slice(0,3)}) ${digits.slice(3,6)}-${digits.slice(6)}`;
+  }
   function autoInitials(name) {
     const words = name.trim().split(/\s+/);
     if (words.length >= 2) return (words[0][0] + words[1][0]).toUpperCase();
@@ -553,6 +566,151 @@ function AdminPanel({ password, onExit }) {
   );
 }
 
+// Owner Portal Components
+function OwnerLogin({ onLogin }) {
+  const [email, setEmail] = useState("");
+  const [pw, setPw] = useState("");
+  const [err, setErr] = useState("");
+  async function handleLogin() {
+    try {
+      const res = await fetch(`${API}/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password: pw }),
+      });
+      const data = await res.json();
+      if (res.ok) { onLogin(data.user); }
+      else { setErr(data.error || "Login failed."); }
+    } catch { setErr("Could not connect to server."); }
+  }
+  return (
+    <div className="admin-login">
+      <style>{css}</style>
+      <div className="admin-login-box">
+        <div className="admin-login-logo">DI</div>
+        <div className="admin-login-title">Business Portal</div>
+        <div className="admin-login-sub">District Internet · Sanford, NC</div>
+        <input className="admin-login-input" type="email" placeholder="Email address" value={email} onChange={(e) => setEmail(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleLogin()} />
+        <input className="admin-login-input" type="password" placeholder="Password" value={pw} onChange={(e) => setPw(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleLogin()} />
+        <button className="admin-login-btn" onClick={handleLogin}>Sign In</button>
+        {err && <div className="admin-login-err">{err}</div>}
+      </div>
+    </div>
+  );
+}
+
+function OwnerPortal({ user, onLogout }) {
+  const [listing, setListing] = useState(null);
+  const [form, setForm] = useState(null);
+  const [success, setSuccess] = useState("");
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!user.listing_id) { setLoading(false); return; }
+    fetch(`${API}/listings/${user.listing_id}`)
+      .then((r) => r.json())
+      .then((d) => { setListing(d); setForm(d); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, [user]);
+
+  function set(k, v) { setForm((f) => ({ ...f, [k]: v })); }
+
+  function formatPhone(v) {
+    const digits = v.replace(/\D/g, "").slice(0, 10);
+    if (digits.length <= 3) return digits;
+    if (digits.length <= 6) return `(${digits.slice(0,3)}) ${digits.slice(3)}`;
+    return `(${digits.slice(0,3)}) ${digits.slice(3,6)}-${digits.slice(6)}`;
+  }
+
+  async function saveListing() {
+    await fetch(`${API}/admin/listings/${listing.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json", "x-admin-password": ADMIN_PASSWORD },
+      body: JSON.stringify(form),
+    });
+    setListing(form);
+    setSuccess("Your listing has been updated successfully!");
+    setTimeout(() => setSuccess(""), 4000);
+  }
+
+  return (
+    <div className="owner-wrap">
+      <style>{css}</style>
+      <div className="owner-nav">
+        <div>
+          <div className="owner-nav-title">Business Portal</div>
+          <div className="owner-nav-sub">Welcome, {user.name}</div>
+        </div>
+        <button className="owner-logout" onClick={onLogout}>Sign Out</button>
+      </div>
+      <div className="owner-body">
+        <div className="owner-greeting">Your Listing</div>
+        <div className="owner-sub">Update your business information below. Changes appear on the directory immediately.</div>
+        {loading && <div className="loading">Loading your listing…</div>}
+        {!loading && !user.listing_id && <div className="empty"><div className="empty-icon">📋</div><h3>No listing linked</h3><p>Contact District Internet to link your business listing to this account.</p></div>}
+        {!loading && form && (
+          <>
+            {success && <div className="owner-success">✓ {success}</div>}
+            <div className="owner-section">
+              <div className="owner-section-title">Basic Information</div>
+              <div className="form-grid">
+                <div className="form-group full">
+                  <label className="form-label">Business Name</label>
+                  <input className="form-input" value={form.name || ""} onChange={(e) => set("name", e.target.value)} />
+                </div>
+                <div className="form-group full">
+                  <label className="form-label">Description</label>
+                  <input className="form-input" value={form.description || ""} onChange={(e) => set("description", e.target.value)} />
+                </div>
+                <div className="form-group full">
+                  <label className="form-label">Address</label>
+                  <input className="form-input" value={form.address || ""} onChange={(e) => set("address", e.target.value)} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Phone</label>
+                  <input className="form-input" value={form.phone || ""} onChange={(e) => set("phone", formatPhone(e.target.value))} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Website</label>
+                  <input className="form-input" value={form.website || ""} onChange={(e) => set("website", e.target.value)} />
+                </div>
+              </div>
+            </div>
+            <div className="owner-section">
+              <div className="owner-section-title">Social Media</div>
+              <div className="form-grid">
+                <div className="form-group">
+                  <label className="form-label">Facebook</label>
+                  <input className="form-input" value={form.facebook || ""} onChange={(e) => set("facebook", e.target.value)} placeholder="https://facebook.com/..." />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Instagram</label>
+                  <input className="form-input" value={form.instagram || ""} onChange={(e) => set("instagram", e.target.value)} placeholder="https://instagram.com/..." />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">X (Twitter)</label>
+                  <input className="form-input" value={form.twitter || ""} onChange={(e) => set("twitter", e.target.value)} placeholder="https://x.com/..." />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">TikTok</label>
+                  <input className="form-input" value={form.tiktok || ""} onChange={(e) => set("tiktok", e.target.value)} placeholder="https://tiktok.com/..." />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">YouTube</label>
+                  <input className="form-input" value={form.youtube || ""} onChange={(e) => set("youtube", e.target.value)} placeholder="https://youtube.com/..." />
+                </div>
+              </div>
+            </div>
+            <div className="form-actions">
+              <button className="btn-save" onClick={saveListing}>Save Changes</button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
   const [page, setPage] = useState("home");
   const [activeCat, setActiveCat] = useState(null);
@@ -563,10 +721,11 @@ export default function App() {
   const [listings, setListings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [adminPw, setAdminPw] = useState(null);
+  const [ownerUser, setOwnerUser] = useState(null);
   const inputRef = useRef(null);
 
-  // Check for admin route
   const isAdmin = window.location.hash === "#admin";
+  const isOwner = window.location.hash === "#owner";
 
   useEffect(() => {
     Promise.all([
@@ -582,6 +741,11 @@ export default function App() {
   if (isAdmin) {
     if (!adminPw) return <AdminLogin onLogin={setAdminPw} />;
     return <AdminPanel password={adminPw} onExit={() => { window.location.hash = ""; setAdminPw(null); }} />;
+  }
+
+  if (isOwner) {
+    if (!ownerUser) return <OwnerLogin onLogin={setOwnerUser} />;
+    return <OwnerPortal user={ownerUser} onLogout={() => { window.location.hash = ""; setOwnerUser(null); }} />;
   }
 
   function goHome() { setPage("home"); setActiveCat(null); setActive(null); setInputVal(""); setSearchQ(""); }
