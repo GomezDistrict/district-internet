@@ -1,13 +1,14 @@
 const express = require('express');
 const mysql = require('mysql2');
 const cors = require('cors');
+const bcrypt = require('bcryptjs');
 require('dotenv').config();
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Admin password - simple protection for local/early use
+// Admin password - kept for backward compatibility during transition
 const ADMIN_PASSWORD = 'district2024';
 
 // Database connection
@@ -26,7 +27,7 @@ db.connect((err) => {
   console.log('Connected to MySQL database');
 });
 
-// Admin auth middleware
+// Admin auth middleware (legacy password)
 function adminAuth(req, res, next) {
   const password = req.headers['x-admin-password'];
   if (password !== ADMIN_PASSWORD) {
@@ -83,7 +84,7 @@ app.get('/api/search', (req, res) => {
   );
 });
 
-// Admin auth check
+// Legacy admin login (password based)
 app.post('/api/admin/login', (req, res) => {
   const { password } = req.body;
   if (password === ADMIN_PASSWORD) {
@@ -91,6 +92,99 @@ app.post('/api/admin/login', (req, res) => {
   } else {
     res.status(401).json({ error: 'Invalid password' });
   }
+});
+
+// Auth Routes
+// Register first admin (only works if no admin exists yet)
+app.post('/api/auth/setup', async (req, res) => {
+  const { name, email, password } = req.body;
+  if (!name || !email || !password) return res.status(400).json({ error: 'Name, email and password required' });
+  db.query('SELECT id FROM users WHERE role = ?', ['admin'], async (err, results) => {
+    if (err) return res.status(500).json({ error: err.message });
+    if (results.length > 0) return res.status(403).json({ error: 'Admin already exists' });
+    const hashed = await bcrypt.hash(password, 10);
+    db.query('INSERT INTO users (name, email, password, role) VALUES (?,?,?,?)',
+      [name, email, hashed, 'admin'],
+      (err, result) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ success: true, id: result.insertId });
+      }
+    );
+  });
+});
+
+// Login for all users
+app.post('/api/auth/login', (req, res) => {
+  const { email, password } = req.body;
+  if (!email || !password) return res.status(400).json({ error: 'Email and password required' });
+  db.query('SELECT * FROM users WHERE email = ?', [email], async (err, results) => {
+    if (err) return res.status(500).json({ error: err.message });
+    if (results.length === 0) return res.status(401).json({ error: 'Invalid email or password' });
+    const user = results[0];
+    const match = await bcrypt.compare(password, user.password);
+    if (!match) return res.status(401).json({ error: 'Invalid email or password' });
+    db.query('UPDATE users SET last_login = NOW() WHERE id = ?', [user.id]);
+    res.json({
+      success: true,
+      user: { id: user.id, name: user.name, email: user.email, role: user.role, listing_id: user.listing_id }
+    });
+  });
+});
+
+// Get all users (admin only)
+app.get('/api/admin/users', adminAuth, (req, res) => {
+  db.query('SELECT id, name, email, role, listing_id, invited_at, last_login, created_at FROM users', (err, results) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(results);
+  });
+});
+
+// Create business owner user (admin only)
+app.post('/api/admin/users', adminAuth, async (req, res) => {
+  const { name, email, password, listing_id } = req.body;
+  if (!name || !email || !password) return res.status(400).json({ error: 'Name, email and password required' });
+  const hashed = await bcrypt.hash(password, 10);
+  db.query('INSERT INTO users (name, email, password, role, listing_id, invited_at) VALUES (?,?,?,?,?,NOW())',
+    [name, email, hashed, 'business_owner', listing_id || null],
+    (err, result) => {
+      if (err) return res.status(500).json({ error: err.message });
+      res.json({ success: true, id: result.insertId });
+    }
+  );
+});
+
+// Update user password
+app.put('/api/auth/password', async (req, res) => {
+  const { email, currentPassword, newPassword } = req.body;
+  db.query('SELECT * FROM users WHERE email = ?', [email], async (err, results) => {
+    if (err) return res.status(500).json({ error: err.message });
+    if (results.length === 0) return res.status(404).json({ error: 'User not found' });
+    const user = results[0];
+    const match = await bcrypt.compare(currentPassword, user.password);
+    if (!match) return res.status(401).json({ error: 'Current password incorrect' });
+    const hashed = await bcrypt.hash(newPassword, 10);
+    db.query('UPDATE users SET password = ? WHERE id = ?', [hashed, user.id], (err) => {
+      if (err) return res.status(500).json({ error: err.message });
+      res.json({ success: true });
+    });
+  });
+});
+
+// Business owner - get their listing
+app.get('/api/owner/listing', async (req, res) => {
+  const { email, password } = req.query;
+  db.query('SELECT * FROM users WHERE email = ?', [email], async (err, results) => {
+    if (err) return res.status(500).json({ error: err.message });
+    if (results.length === 0) return res.status(401).json({ error: 'Unauthorized' });
+    const user = results[0];
+    const match = await bcrypt.compare(password, user.password);
+    if (!match) return res.status(401).json({ error: 'Unauthorized' });
+    if (!user.listing_id) return res.status(404).json({ error: 'No listing linked' });
+    db.query('SELECT * FROM listings WHERE id = ?', [user.listing_id], (err, results) => {
+      if (err) return res.status(500).json({ error: err.message });
+      res.json(results[0]);
+    });
+  });
 });
 
 // Admin - Create listing
